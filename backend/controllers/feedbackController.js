@@ -1,224 +1,192 @@
-const { statements } = require('../database');
+const storage = require('../storage');
 
 const getFeedback = async (req, res) => {
-  const {
-    page,
-    limit,
-    category,
-    sortBy,
-    search,
-    myUpvotes
-  } = req.validatedQuery;
-
-  const offset = (page - 1) * limit;
-  const sessionId = req.sessionId;
-  let feedback, totalCount;
-
-  if (myUpvotes === 'true') {
-    // Filter for user's upvoted feedback
-    if (search) {
-      const searchQuery = search.split(' ')
-        .filter(term => term.length > 0)
-        .map(term => `"${term}"`)
-        .join(' OR ');
-      
-      feedback = statements.searchMyUpvotedFeedback.all(
-        searchQuery,
-        sessionId,
-        category,
-        category,
-        sortBy,
-        sortBy,
-        limit,
-        offset
-      );
-
-      totalCount = statements.getMyUpvotedSearchCount.get(
-        searchQuery,
-        sessionId,
-        category,
-        category
-      ).total;
-    } else {
-      feedback = statements.getMyUpvotedFeedback.all(
-        sessionId,
-        category,
-        category,
-        sortBy,
-        sortBy,
-        limit,
-        offset
-      );
-
-      totalCount = statements.getMyUpvotedFeedbackCount.get(
-        sessionId,
-        category,
-        category
-      ).total;
-    }
-  } else {
-    // Regular query (all feedback)
-    if (search) {
-      // Search with FTS5
-      const searchQuery = search.split(' ')
-        .filter(term => term.length > 0)
-        .map(term => `"${term}"`)
-        .join(' OR ');
-      
-      feedback = statements.searchFeedback.all(
-        searchQuery,
-        category,
-        category,
-        sortBy,
-        sortBy,
-        limit,
-        offset
-      );
-
-      totalCount = statements.getSearchCount.get(
-        searchQuery,
-        category,
-        category
-      ).total;
-    } else {
-      // Regular query with filtering
-      feedback = statements.getFeedback.all(
-        category,
-        category,
-        sortBy,
-        sortBy,
-        limit,
-        offset
-      );
-
-      totalCount = statements.getFeedbackCount.get(
-        category,
-        category
-      ).total;
-    }
-  }
-
-  const totalPages = Math.ceil(totalCount / limit);
-  const hasNext = page < totalPages;
-  const hasPrev = page > 1;
-
-  res.json({
-    data: feedback,
-    pagination: {
-      currentPage: page,
-      totalPages,
-      totalItems: totalCount,
-      itemsPerPage: limit,
-      hasNext,
-      hasPrev
-    },
-    filters: {
+  try {
+    const {
+      page = 1,
+      limit = 10,
       category,
-      sortBy,
+      sortBy = 'recent',
       search
-    }
-  });
+    } = req.query;
+
+    // Validate parameters
+    const validatedPage = Math.max(1, parseInt(page) || 1);
+    const validatedLimit = Math.min(50, Math.max(1, parseInt(limit) || 10));
+    const validSortBy = ['recent', 'upvotes'].includes(sortBy) ? sortBy : 'recent';
+    const validCategory = ['bug', 'feature', 'improvement'].includes(category) ? category : null;
+
+    const result = storage.getFeedback({
+      page: validatedPage,
+      limit: validatedLimit,
+      category: validCategory,
+      sortBy: validSortBy,
+      search: search?.trim()
+    });
+
+    res.json({
+      success: true,
+      data: {
+        feedback: result.feedback,
+        pagination: {
+          page: result.page,
+          limit: result.limit,
+          total: result.total,
+          totalPages: result.totalPages
+        },
+        filters: {
+          category: validCategory,
+          sortBy: validSortBy,
+          search: search || null
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching feedback:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch feedback'
+    });
+  }
 };
 
 const getFeedbackById = async (req, res) => {
-  const id = req.validatedId;
-  const feedback = statements.getFeedbackById.get(id);
-  
-  if (!feedback) {
-    return res.status(404).json({ 
-      error: 'Feedback not found',
-      message: `No feedback found with ID ${id}`
+  try {
+    const { id } = req.params;
+    const feedback = storage.getFeedbackById(parseInt(id));
+    
+    if (!feedback) {
+      return res.status(404).json({ 
+        success: false,
+        error: 'Feedback not found',
+        message: `No feedback found with ID ${id}`
+      });
+    }
+    
+    res.json({
+      success: true,
+      data: feedback
+    });
+  } catch (error) {
+    console.error('Error fetching feedback by ID:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch feedback'
     });
   }
-  
-  res.json(feedback);
 };
 
 const createFeedback = async (req, res) => {
-  const { title, description, category } = req.validatedData;
-  
-  const result = statements.createFeedback.run(title, description, category);
-  const newFeedback = statements.getFeedbackById.get(result.lastInsertRowid);
-  
-  res.status(201).json({
-    message: 'Feedback created successfully',
-    data: newFeedback
-  });
+  try {
+    const { title, description, category } = req.body;
+    
+    // Basic validation
+    if (!title || !description || !category) {
+      return res.status(400).json({
+        success: false,
+        error: 'Missing required fields',
+        message: 'Title, description, and category are required'
+      });
+    }
+    
+    if (!['bug', 'feature', 'improvement'].includes(category)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid category',
+        message: 'Category must be one of: bug, feature, improvement'
+      });
+    }
+    
+    const newFeedback = storage.createFeedback({
+      title: title.trim(),
+      description: description.trim(),
+      category
+    });
+    
+    res.status(201).json({
+      success: true,
+      message: 'Feedback created successfully',
+      data: newFeedback
+    });
+  } catch (error) {
+    console.error('Error creating feedback:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to create feedback'
+    });
+  }
 };
 
 const upvoteFeedback = async (req, res) => {
-  const id = req.validatedId;
-  const sessionId = req.sessionId;
-  
-  // Check if feedback exists
-  const feedback = statements.getFeedbackById.get(id);
-  if (!feedback) {
-    return res.status(404).json({ 
-      error: 'Feedback not found',
-      message: `No feedback found with ID ${id}`
+  try {
+    const { id } = req.params;
+    const sessionId = req.headers['x-session-id'] || 'anonymous';
+    
+    const updatedFeedback = storage.upvoteFeedback(parseInt(id), sessionId);
+    
+    if (!updatedFeedback) {
+      return res.status(404).json({ 
+        success: false,
+        error: 'Feedback not found',
+        message: `No feedback found with ID ${id}`
+      });
+    }
+    
+    res.json({
+      success: true,
+      message: 'Feedback upvoted successfully',
+      data: updatedFeedback
+    });
+  } catch (error) {
+    console.error('Error upvoting feedback:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to upvote feedback'
     });
   }
-  
-  // Check if user has already voted
-  const existingVote = statements.getUserVote.get(sessionId, id);
-  
-  let message;
-  let action;
-  
-  if (existingVote && existingVote.vote_type === 'upvote') {
-    // User is removing their upvote
-    statements.downvoteFeedback.run(id);
-    statements.removeUserVote.run(sessionId, id);
-    message = 'Upvote removed successfully';
-    action = 'removed';
-  } else {
-    // User is adding an upvote (or switching from downvote)
-    statements.upvoteFeedback.run(id);
-    statements.addUserVote.run(sessionId, id, 'upvote');
-    message = 'Feedback upvoted successfully';
-    action = 'added';
-  }
-  
-  const updatedFeedback = statements.getFeedbackById.get(id);
-  
-  res.json({
-    message,
-    action,
-    data: updatedFeedback
-  });
 };
 
 const getHealthStatus = async (req, res) => {
-  // Basic health check - could be expanded to check database connectivity
   try {
-    // Test database connection
-    statements.getFeedbackCount.get(null, null);
+    const stats = storage.getStats();
     
     res.json({ 
       status: 'OK', 
       timestamp: new Date().toISOString(),
-      database: 'connected'
+      storage: 'connected',
+      stats
     });
   } catch (error) {
     res.status(500).json({ 
       status: 'ERROR', 
       timestamp: new Date().toISOString(),
-      database: 'disconnected',
+      storage: 'disconnected',
       error: error.message
     });
   }
 };
 
 const getUserVoteStatus = async (req, res) => {
-  const id = req.validatedId;
-  const sessionId = req.sessionId;
-  
-  const vote = statements.getUserVote.get(sessionId, id);
-  
-  res.json({
-    hasVoted: !!vote,
-    voteType: vote?.vote_type || null
-  });
+  try {
+    const { id } = req.params;
+    const sessionId = req.headers['x-session-id'] || 'anonymous';
+    
+    const voteType = storage.getUserVote(sessionId, parseInt(id));
+    
+    res.json({
+      success: true,
+      data: {
+        hasVoted: !!voteType,
+        voteType: voteType || null
+      }
+    });
+  } catch (error) {
+    console.error('Error getting vote status:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to get vote status'
+    });
+  }
 };
 
 module.exports = {

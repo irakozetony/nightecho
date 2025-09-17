@@ -1,8 +1,12 @@
 const Database = require('better-sqlite3');
 const path = require('path');
 
-// Initialize database
-const db = new Database(path.join(__dirname, 'feedback.db'));
+// Initialize database - use in-memory for serverless environment
+const dbPath = process.env.NODE_ENV === 'production' && process.env.VERCEL 
+  ? ':memory:' 
+  : path.join(__dirname, 'feedback.db');
+
+const db = new Database(dbPath);
 
 // Enable foreign keys
 db.pragma('foreign_keys = ON');
