@@ -90,11 +90,11 @@ const FeedbackForm = ({ onSuccess, onError }) => {
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-100">
+    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border border-gray-100 dark:border-gray-700">
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-xl font-bold text-gray-900">Share Your Feedback</h2>
-        <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-          <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <h2 className="text-xl font-bold text-gray-900 dark:text-white">Share Your Feedback</h2>
+        <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center">
+          <svg className="w-4 h-4 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 8h10m0 0V6a2 2 0 00-2-2H9a2 2 0 00-2 2v2m10 0v10a2 2 0 01-2 2H9a2 2 0 01-2-2V8m10 0H7" />
           </svg>
         </div>
@@ -103,7 +103,7 @@ const FeedbackForm = ({ onSuccess, onError }) => {
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Title */}
         <div>
-          <label htmlFor="title" className="block text-sm font-semibold text-gray-700 mb-2">
+          <label htmlFor="title" className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
             Title *
           </label>
           <input
@@ -113,32 +113,32 @@ const FeedbackForm = ({ onSuccess, onError }) => {
             value={formData.title}
             onChange={handleChange}
             placeholder="Brief summary of your feedback"
-            className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors ${
-              errors.title ? 'border-red-300 bg-red-50' : 'border-gray-300'
+            className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 ${
+              errors.title ? 'border-red-300 bg-red-50 dark:border-red-600 dark:bg-red-900/20' : 'border-gray-300 dark:border-gray-600'
             }`}
             disabled={isSubmitting}
           />
           {errors.title && (
-            <p className="mt-1 text-sm text-red-600">{errors.title}</p>
+            <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.title}</p>
           )}
-          <p className="mt-1 text-xs text-gray-500">
+          <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
             {formData.title.length}/200 characters
           </p>
         </div>
 
         {/* Category */}
         <div>
-          <label className="block text-sm font-semibold text-gray-700 mb-3">
+          <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
             Category *
           </label>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             {CATEGORIES.map((cat) => (
               <label
                 key={cat.value}
-                className={`cursor-pointer p-4 border rounded-lg transition-all hover:bg-gray-50 ${
+                className={`cursor-pointer p-4 border rounded-lg transition-all hover:bg-gray-50 dark:hover:bg-gray-700 ${
                   formData.category === cat.value
-                    ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-200'
-                    : 'border-gray-200'
+                    ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30 ring-2 ring-blue-200 dark:ring-blue-600'
+                    : 'border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800'
                 } ${isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}`}
               >
                 <input
@@ -150,19 +150,19 @@ const FeedbackForm = ({ onSuccess, onError }) => {
                   className="sr-only"
                   disabled={isSubmitting}
                 />
-                <div className="font-medium text-gray-900 mb-1">{cat.label}</div>
-                <div className="text-xs text-gray-600">{cat.description}</div>
+                <div className="font-medium text-gray-900 dark:text-white mb-1">{cat.label}</div>
+                <div className="text-xs text-gray-600 dark:text-gray-400">{cat.description}</div>
               </label>
             ))}
           </div>
           {errors.category && (
-            <p className="mt-2 text-sm text-red-600">{errors.category}</p>
+            <p className="mt-2 text-sm text-red-600 dark:text-red-400">{errors.category}</p>
           )}
         </div>
 
         {/* Description */}
         <div>
-          <label htmlFor="description" className="block text-sm font-semibold text-gray-700 mb-2">
+          <label htmlFor="description" className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
             Description *
           </label>
           <textarea
@@ -172,21 +172,21 @@ const FeedbackForm = ({ onSuccess, onError }) => {
             onChange={handleChange}
             placeholder="Provide detailed information about your feedback..."
             rows={6}
-            className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors resize-none ${
-              errors.description ? 'border-red-300 bg-red-50' : 'border-gray-300'
+            className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors resize-none bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 ${
+              errors.description ? 'border-red-300 bg-red-50 dark:border-red-600 dark:bg-red-900/20' : 'border-gray-300 dark:border-gray-600'
             }`}
             disabled={isSubmitting}
           />
           {errors.description && (
-            <p className="mt-1 text-sm text-red-600">{errors.description}</p>
+            <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.description}</p>
           )}
-          <p className="mt-1 text-xs text-gray-500">
+          <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
             {formData.description.length}/2000 characters
           </p>
         </div>
 
         {/* Submit Buttons */}
-        <div className="flex items-center justify-end space-x-4 pt-6 border-t border-gray-100">
+        <div className="flex items-center justify-end space-x-4 pt-6 border-t border-gray-100 dark:border-gray-700">
           <Button
             type="button"
             variant="ghost"
