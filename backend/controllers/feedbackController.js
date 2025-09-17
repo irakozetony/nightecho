@@ -25,26 +25,24 @@ const getFeedback = async (req, res) => {
     });
 
     res.json({
-      success: true,
-      data: {
-        feedback: result.feedback,
-        pagination: {
-          page: result.page,
-          limit: result.limit,
-          total: result.total,
-          totalPages: result.totalPages
-        },
-        filters: {
-          category: validCategory,
-          sortBy: validSortBy,
-          search: search || null
-        }
+      data: result.feedback,
+      pagination: {
+        currentPage: result.page,
+        totalPages: result.totalPages,
+        totalItems: result.total,
+        itemsPerPage: result.limit,
+        hasNext: result.page < result.totalPages,
+        hasPrev: result.page > 1
+      },
+      filters: {
+        category: validCategory,
+        sortBy: validSortBy,
+        search: search || null
       }
     });
   } catch (error) {
     console.error('Error fetching feedback:', error);
     res.status(500).json({
-      success: false,
       error: 'Failed to fetch feedback'
     });
   }
@@ -57,20 +55,15 @@ const getFeedbackById = async (req, res) => {
     
     if (!feedback) {
       return res.status(404).json({ 
-        success: false,
         error: 'Feedback not found',
         message: `No feedback found with ID ${id}`
       });
     }
     
-    res.json({
-      success: true,
-      data: feedback
-    });
+    res.json(feedback);
   } catch (error) {
     console.error('Error fetching feedback by ID:', error);
     res.status(500).json({
-      success: false,
       error: 'Failed to fetch feedback'
     });
   }
@@ -83,7 +76,6 @@ const createFeedback = async (req, res) => {
     // Basic validation
     if (!title || !description || !category) {
       return res.status(400).json({
-        success: false,
         error: 'Missing required fields',
         message: 'Title, description, and category are required'
       });
@@ -91,7 +83,6 @@ const createFeedback = async (req, res) => {
     
     if (!['bug', 'feature', 'improvement'].includes(category)) {
       return res.status(400).json({
-        success: false,
         error: 'Invalid category',
         message: 'Category must be one of: bug, feature, improvement'
       });
@@ -104,14 +95,12 @@ const createFeedback = async (req, res) => {
     });
     
     res.status(201).json({
-      success: true,
       message: 'Feedback created successfully',
       data: newFeedback
     });
   } catch (error) {
     console.error('Error creating feedback:', error);
     res.status(500).json({
-      success: false,
       error: 'Failed to create feedback'
     });
   }
@@ -126,21 +115,18 @@ const upvoteFeedback = async (req, res) => {
     
     if (!updatedFeedback) {
       return res.status(404).json({ 
-        success: false,
         error: 'Feedback not found',
         message: `No feedback found with ID ${id}`
       });
     }
     
     res.json({
-      success: true,
       message: 'Feedback upvoted successfully',
       data: updatedFeedback
     });
   } catch (error) {
     console.error('Error upvoting feedback:', error);
     res.status(500).json({
-      success: false,
       error: 'Failed to upvote feedback'
     });
   }
@@ -174,16 +160,12 @@ const getUserVoteStatus = async (req, res) => {
     const voteType = storage.getUserVote(sessionId, parseInt(id));
     
     res.json({
-      success: true,
-      data: {
-        hasVoted: !!voteType,
-        voteType: voteType || null
-      }
+      hasVoted: !!voteType,
+      voteType: voteType || null
     });
   } catch (error) {
     console.error('Error getting vote status:', error);
     res.status(500).json({
-      success: false,
       error: 'Failed to get vote status'
     });
   }
